@@ -1,6 +1,6 @@
 package entity
 
-//Person object for REST(CRUD)
+//Contact object for REST(CRUD)
 type Contact struct {
 	ID        int    `json:"id"`
 	FirstName string `json:"firstName"`
