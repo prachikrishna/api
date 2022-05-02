@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package grpc;
+option go_package="prachi/grpc";
+
+service WordService {
+  rpc GetWCount (GetRequest) returns (GetResponse) {}
+}
+
+message Word {
+  uint64 count = 1;
+  string word = 2;
+}
+
+message GetRequest {
+  string text = 1; 
+}
+  
+message GetResponse {
+  repeated Word words = 1; 
+}
