@@ -17,7 +17,7 @@ type grpcService struct {
 	grpcClient mysvcgrpc.WordServiceClient
 }
 
-// NewGRPCService creates a new gRPC user service connection using the specified connection string.
+// NewGRPCService creates a new gRPC word service connection using the specified connection string.
 func NewGRPCService(connString string) (mysvc.Service, error) {
 	conn, err := grpc.Dial(connString, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -27,7 +27,7 @@ func NewGRPCService(connString string) (mysvc.Service, error) {
 	return &grpcService{grpcClient: mysvcgrpc.NewWordServiceClient(conn)}, nil
 }
 
-func (s *grpcService) GetWCount(text string) (result []*mysvcgrpc.Word) {
+func (s *grpcService) GetWCount(text string) (result []*mysvcgrpc.Word, err error) {
 	result = []*mysvcgrpc.Word{}
 
 	req := &mysvcgrpc.GetRequest{
@@ -41,12 +41,7 @@ func (s *grpcService) GetWCount(text string) (result []*mysvcgrpc.Word) {
 		return
 	}
 
-	//start from here
 	result = append(result, resp.GetWords()...)
-	/*for _, grpcUser := range resp.GetWords() {
-		result = append(result, grpcUser)
-		//u := unmarshalUser(grpcUser)
-		//result[u.ID] = u
-	}*/
+
 	return
 }

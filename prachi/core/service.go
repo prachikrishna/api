@@ -1,8 +1,5 @@
 package core
 
-//28-04-22 leaving after adding list type here and in mysvc,everything is fine till here
-//add the main.go and client part
-
 import (
 	word_pb "prachi/grpc"
 	"prachi/mysvc"
@@ -19,7 +16,7 @@ func NewService() mysvc.Service {
 }
 
 //func (s *service) GetWCount(text string) (result map[string]uint32, err error) {
-func (s *service) GetWCount(text string) []*word_pb.Word {
+func (s *service) GetWCount(text string) ([]*word_pb.Word, error) {
 	words1 := strings.Fields(text)
 
 	frequency_map := make(map[string]uint64)
@@ -52,11 +49,11 @@ func (s *service) GetWCount(text string) []*word_pb.Word {
 	})
 
 	if len(words) > 10 {
-		return words[:10]
+		return words[:10], nil
 	}
 
 	//after sorting,get the first 10 words with their count
 
-	return words
+	return words, nil
 
 }
