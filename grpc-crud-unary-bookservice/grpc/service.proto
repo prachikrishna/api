@@ -1,0 +1,110 @@
+syntax = "proto3";
+package v1;
+
+option go_package="grpc-crud-unary-bookservice/grpc";
+//import "google/protobuf/timestamp.proto";
+
+//book structure that we will be providing service on
+message Book {
+    // Unique integer identifier of the book
+    int64 id = 1;
+
+    // Title of the book
+    string name = 2;
+
+    // Author of the book
+    string author = 3;
+    
+}
+
+// Request data to create new book
+message CreateRequest{
+
+    // Book entity to add
+    Book book = 1;
+}
+
+// Contains data of created book
+message CreateResponse{
+    
+    // ID of created book
+    int64 id = 1;
+}
+
+// Request data to get book
+message ReadRequest{
+    
+
+    // Unique integer identifier of the book
+    int64 id = 1;
+}
+
+// Contains book data specified in by ID request
+message ReadResponse{
+    
+
+    // book entity read by ID
+    Book book = 1;
+}
+
+// Request data to update book
+message UpdateRequest{
+    
+
+    // book entity to update
+    Book book = 1;
+}
+
+// Contains status of update operation
+message UpdateResponse{
+    
+
+    // Contains number of entities have beed updated
+    // Equals 1 in case of succesfull update
+    int64 updated = 1;
+}
+
+// Request data to delete book
+message DeleteRequest{
+    
+
+    // Unique integer identifier of the book to delete
+    int64 id = 1;
+}
+
+// Contains status of delete operation
+message DeleteResponse{
+    
+
+    // Contains number of entities have beed deleted
+    // Equals 1 in case of succesfull delete
+    int64 deleted = 1;
+}
+
+// Request data to get all books
+message ListAllRequest{}
+
+// Contains list of all books
+message ListAllResponse{
+    
+    // List of all books
+    repeated Book books = 2;
+}
+
+// Service to manage list of books
+service BookService {
+    // Create new book
+    rpc CreateBook(CreateRequest) returns (CreateResponse);
+
+    // Get a particular book
+    rpc ReadBook(ReadRequest) returns (ReadResponse);
+
+    // Update book
+    rpc UpdateBook(UpdateRequest) returns (UpdateResponse);
+
+    // Delete book
+    rpc DeleteBook(DeleteRequest) returns (DeleteResponse);
+
+    // Get all books
+    rpc ListAllBooks(ListAllRequest) returns (ListAllResponse);
+}
