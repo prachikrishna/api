@@ -63,7 +63,7 @@ func (s *pageInfoServiceServer) GetDetails(req *grpc.PageRequest,
 		if err := rows.Err(); err != nil {
 			return status.Error(codes.Unknown, "failed to retrieve data from pagedetails-> "+err.Error())
 		}
-		return status.Error(codes.NotFound, fmt.Sprintf("Book with ID='%d' is not found",
+		return status.Error(codes.NotFound, fmt.Sprintf("Page with page_no='%d'  not found",
 			req.PageNo))
 	}
 
