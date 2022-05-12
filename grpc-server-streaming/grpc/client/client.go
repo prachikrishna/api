@@ -18,7 +18,10 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net"
+
+	//"net"
+	"flag"
+	"time"
 
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -27,10 +30,10 @@ import (
 	"google.golang.org/grpc"
 )
 
-const (
+/*const (
 	server     = "127.0.0.1"
 	serverPort = "9090"
-)
+)*/
 
 func printPageItems(client pb.PageInfoServiceClient) {
 	curReq := &pb.PageRequest{PageNo: 1, PageSize: "a4"}
@@ -85,7 +88,27 @@ if err != nil {
 log.Printf("Read result: <%+v>\n\n", res2)*/
 
 func main() {
-	serverAddr := net.JoinHostPort(server, serverPort)
+	// get configuration
+	address := flag.String("server", "", "gRPC server in format host:port")
+	flag.Parse()
+
+	// Set up a connection to the server.
+	conn, err := grpc.Dial(*address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("did not connect: %v", err)
+	}
+	defer conn.Close()
+
+	client := pb.NewPageInfoServiceClient(conn)
+
+	_, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	//t := time.Now().In(time.UTC)
+	//reminder, _ := ptypes.TimestampProto(t)
+	//pfx := t.Format(time.RFC3339Nano)
+
+	/*serverAddr := net.JoinHostPort(server, serverPort)
 
 	// setup insecure connection
 	conn, err := grpc.Dial(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -93,7 +116,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	client := pb.NewPageInfoServiceClient(conn)
+	//client := pb.NewPageInfoServiceClient(conn)*/
 
 	printPageItems(client)
 }

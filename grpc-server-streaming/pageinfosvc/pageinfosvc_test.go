@@ -1,7 +1,7 @@
 package pageinfosvc
 
 import (
-	"context"
+	//"context"
 	"reflect"
 	"testing"
 
@@ -14,7 +14,7 @@ import (
 )
 
 func Test_pageinfoServiceServer_Read(t *testing.T) {
-	ctx := context.Background()
+	//ctx := context.Background()
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
@@ -33,37 +33,35 @@ func Test_pageinfoServiceServer_Read(t *testing.T) {
 		s       grpc.PageInfoServiceServer
 		args    args
 		mock    func()
-		want    *grpc.PageItems
+		want    error
 		wantErr bool
 	}{
 		{
 			name: "OK",
 			s:    s,
 			args: args{
-				ctx: ctx,
 				req: &grpc.PageRequest{
 					PageNo:   1,
 					PageSize: "a4",
 				},
 			},
 			mock: func() {
-				//check whether reminder needs to be present here
 				rows := sqlmock.NewRows([]string{"Page_no", "Page_size", "Title", "Total_word", "Total_sentences", "Total_images"}).
 					AddRow(1, "a4", "Death on the nile", 1000, 100, 5)
-				mock.ExpectQuery("SELECT (.+) FROM books").WithArgs(1, 2).WillReturnRows(rows)
+				mock.ExpectQuery("SELECT (.+) FROM pagedetails").WithArgs(1, 2).WillReturnRows(rows)
 			},
-			want: &grpc.PageItems{
+			/*want: &grpc.PageItems{
 				Title:          "Death on the nile",
 				TotalWords:     1000,
 				TotalSentences: 100,
 				TotalImages:    5,
-			},
+			},*/
+			want: nil,
 		},
 		{
 			name: "Not found",
 			s:    s,
 			args: args{
-				ctx: ctx,
 				req: &grpc.PageRequest{
 					PageNo:   1,
 					PageSize: "a4",
@@ -71,7 +69,7 @@ func Test_pageinfoServiceServer_Read(t *testing.T) {
 			},
 			mock: func() {
 				rows := sqlmock.NewRows([]string{"Page_no", "Page_size", "Title", "Total_word", "Total_sentences", "Total_images"})
-				mock.ExpectQuery("SELECT (.+) FROM books").WithArgs(1, 2).WillReturnRows(rows)
+				mock.ExpectQuery("SELECT (.+) FROM pagedetails").WithArgs(1, 2).WillReturnRows(rows)
 			},
 			wantErr: true,
 		},
@@ -81,12 +79,12 @@ func Test_pageinfoServiceServer_Read(t *testing.T) {
 			tt.mock()
 			got, err := tt.s.GetDetails(tt.args.req, tt.args.stream)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("bookServiceServer.Read() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("pageinfoServiceServer.GetDetails() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 
 			if err == nil && !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("bookServiceServer.Read() = %v, want %v", got, tt.want)
+				t.Errorf("pageinfoServiceServer.GetDetails() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"grpc-server-streaming/grpc"
+	"log"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -15,6 +16,10 @@ type pageInfoServiceServer struct {
 	grpc.UnimplementedPageInfoServiceServer
 }
 
+/*type container struct {
+	items []*grpc.PageItems
+}*/
+
 /*type Page struct{
 	Title string
 	Total_words int32
@@ -22,7 +27,7 @@ type pageInfoServiceServer struct {
 	Total_images int32
 }*/
 
-// NewBookServiceServer creates Book service
+// NewPageInfoServiceServer creates PageInfo service
 func NewPageInfoServiceServer(db *sql.DB) grpc.PageInfoServiceServer {
 	return &pageInfoServiceServer{db: db}
 }
@@ -46,39 +51,47 @@ func (s *pageInfoServiceServer) GetDetails(req *grpc.PageRequest,
 	}
 	defer c.Close()
 
-	// query book by ID
+	// query items by page number and size
 	rows, err := c.QueryContext(ctx, "SELECT `Title`, `Total_words`, `Total_sentences`,`Total_images` FROM PageDetails WHERE `Page_no`=?, `Page_size`=?",
 		req.PageNo, req.PageSize)
 	if err != nil {
-		return status.Error(codes.Unknown, "failed to select from books-> "+err.Error())
+		return status.Error(codes.Unknown, "failed to select from pagedetails-> "+err.Error())
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
 		if err := rows.Err(); err != nil {
-			return status.Error(codes.Unknown, "failed to retrieve data from books-> "+err.Error())
+			return status.Error(codes.Unknown, "failed to retrieve data from pagedetails-> "+err.Error())
 		}
 		return status.Error(codes.NotFound, fmt.Sprintf("Book with ID='%d' is not found",
 			req.PageNo))
 	}
 
-	// get book data
+	// get data
 	var td grpc.PageItems
 	if err := rows.Scan(&td.Title, &td.TotalWords, &td.TotalSentences, &td.TotalImages); err != nil {
-		return status.Error(codes.Unknown, "failed to retrieve field values from books row-> "+err.Error())
+		return status.Error(codes.Unknown, "failed to retrieve field values from pagedetails row-> "+err.Error())
 	}
 
 	if rows.Next() {
-		return status.Error(codes.Unknown, fmt.Sprintf("found multiple books rows with ID='%d'",
+		return status.Error(codes.Unknown, fmt.Sprintf("found multiple pagedetails rows with page_no='%d'",
 			req.PageNo))
 	}
 
-	if err := stream.Send(&td); err != nil {
+	/*if err := stream.Send(&td); err != nil {
 		return err
+	}*/
+
+	res := stream.Send(&grpc.PageItems{
+		Title:          td.Title,
+		TotalWords:     td.TotalWords,
+		TotalSentences: td.TotalSentences,
+		TotalImages:    td.TotalImages,
+	})
+
+	if res != nil {
+		log.Fatalf("Error when response was sent to the client: %v", res)
 	}
 
-	/*return &grpc.ReadResponse{
-		Book: &td,
-	}, nil*/
 	return nil
 }
