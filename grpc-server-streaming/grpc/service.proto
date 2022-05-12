@@ -1,0 +1,20 @@
+syntax = "proto3";
+package v1;
+
+option go_package="grpc-server-streaming/grpc";
+
+message PageRequest{
+    uint32 page_no=1;
+    string page_size=2;
+}
+
+message PageItems { 
+    string title = 1;
+    int32 total_words = 2;
+    int32 total_sentences = 3;
+    int32 total_images = 4;
+}
+
+service PageInfoService{
+    rpc GetDetails(PageRequest)returns(stream PageItems);
+}
