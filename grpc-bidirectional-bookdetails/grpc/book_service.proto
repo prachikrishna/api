@@ -1,0 +1,29 @@
+syntax = "proto3";
+package book;
+
+option go_package="grpc-bidirectional-bookdetails/grpc";
+
+message Book{
+    // Unique integer identifier of the book
+    int64 id = 1;
+
+    // Title of the book
+    string name = 2;
+
+    // Author of the book
+    string author = 3;
+}
+
+message Request{
+    int64 id =1;
+}
+
+message Response{
+    Book book = 1;
+}
+
+
+service BookService{
+    rpc GetDetails(stream Request)returns(stream Response);
+}
+
