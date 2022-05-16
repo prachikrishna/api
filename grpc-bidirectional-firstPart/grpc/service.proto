@@ -1,0 +1,29 @@
+syntax = "proto3";
+package v1;
+
+option go_package="grpc-bidirectinal-firstpart/grpc";
+
+service SearchBookService{
+    rpc FindMatch(stream Request)returns(stream Response);
+}
+
+message Book{
+    int64 id = 1;
+
+    // Title of the book
+    string name = 2;
+
+    // Author of the book
+    string author = 3;
+}
+
+message Request {
+    oneof search_tag {
+      string name = 1;
+      string author = 2;
+    }
+}
+
+message Response{
+    Book book =1;
+}
