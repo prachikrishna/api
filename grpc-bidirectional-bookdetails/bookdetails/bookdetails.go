@@ -48,7 +48,7 @@ func (s *bookServiceServer) GetDetails(stream grpc.BookService_GetDetailsServer)
 		}
 
 		rows, err := c.QueryContext(ctx, "SELECT `ID`, `Name`, `Author` FROM books WHERE `ID`=?",
-			req.Id)
+			req.GetId())
 		if err != nil {
 			return status.Error(codes.Unknown, "failed to select from books-> "+err.Error())
 		}
