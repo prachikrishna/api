@@ -5,7 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"grpc-server-streaming/grpc"
-	"log"
+
+	//"log"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -51,9 +52,13 @@ func (s *pageInfoServiceServer) GetDetails(req *grpc.PageRequest,
 	}
 	defer c.Close()
 
+	/*if req.GetPageNo() > 1 {
+		offset_value:=(req.GetPageNo()-1)*req.GetPageSize()
+	}*/
+
 	// query items by page number and size
-	rows, err := c.QueryContext(ctx, "SELECT `Title`, `Total_words`, `Total_sentences`,`Total_images` FROM PageDetails WHERE `Page_no`=?, `Page_size`=?",
-		req.PageNo, req.PageSize)
+	rows, err := c.QueryContext(ctx, "SELECT `Title`, `Total_words`, `Total_sentences`,`Total_images` FROM PageDetails WHERE `Page_no`=? LIMIT %d OFFSET %d",
+		req.PageNo, req.PageSize, (req.GetPageNo()-1)*req.GetPageSize())
 	if err != nil {
 		return status.Error(codes.Unknown, "failed to select from pagedetails-> "+err.Error())
 	}
@@ -68,30 +73,45 @@ func (s *pageInfoServiceServer) GetDetails(req *grpc.PageRequest,
 	}
 
 	// get data
-	var td grpc.PageItems
-	if err := rows.Scan(&td.Title, &td.TotalWords, &td.TotalSentences, &td.TotalImages); err != nil {
-		return status.Error(codes.Unknown, "failed to retrieve field values from pagedetails row-> "+err.Error())
+	var pg []*grpc.PageItems
+	var td *grpc.PageItems
+
+	for rows.Next() {
+
+		if err := rows.Scan(&td.Title, &td.TotalWords, &td.TotalSentences, &td.TotalImages); err != nil {
+			return status.Error(codes.Unknown, "failed to retrieve field values from pagedetails row-> "+err.Error())
+		}
+		pg = append(pg, td)
+
 	}
 
 	if rows.Next() {
 		return status.Error(codes.Unknown, fmt.Sprintf("found multiple pagedetails rows with page_no='%d'",
 			req.PageNo))
 	}
+	for _, p := range pg {
+		res := &grpc.PageItems{
+			Title:          p.Title,
+			TotalWords:     p.TotalWords,
+			TotalSentences: p.TotalSentences,
+			TotalImages:    p.TotalImages,
+		}
+		if err := stream.Send(res); err != nil {
+			return err
+		}
 
-	/*if err := stream.Send(&td); err != nil {
-		return err
-	}*/
+	}
 
-	res := stream.Send(&grpc.PageItems{
+	/*res := stream.Send(&grpc.PageItems{
 		Title:          td.Title,
 		TotalWords:     td.TotalWords,
 		TotalSentences: td.TotalSentences,
 		TotalImages:    td.TotalImages,
-	})
+	})*/
 
-	if res != nil {
+	/*if res != nil {
 		log.Fatalf("Error when response was sent to the client: %v", res)
-	}
+	}*/
 
 	return nil
 }

@@ -1,7 +1,7 @@
 package pageinfosvc
 
 import (
-	//"context"
+	"context"
 	"reflect"
 	"testing"
 
@@ -13,79 +13,41 @@ import (
 	"grpc-server-streaming/grpc"
 )
 
-func Test_pageinfoServiceServer_Read(t *testing.T) {
-	//ctx := context.Background()
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-	defer db.Close()
-	s := NewPageInfoServiceServer(db)
-	//tm := time.Now().In(time.UTC)
-	//reminder, _ := ptypes.TimestampProto(tm)
-
-	type args struct {
-		req    *grpc.PageRequest
-		stream grpc.PageInfoService_GetDetailsServer
-	}
-	tests := []struct {
-		name    string
-		s       grpc.PageInfoServiceServer
-		args    args
-		mock    func()
-		want    error
-		wantErr bool
-	}{
-		{
-			name: "OK",
-			s:    s,
-			args: args{
-				req: &grpc.PageRequest{
-					PageNo:   1,
-					PageSize: "a4",
-				},
-			},
-			mock: func() {
-				rows := sqlmock.NewRows([]string{"Page_no", "Page_size", "Title", "Total_word", "Total_sentences", "Total_images"}).
-					AddRow(1, "a4", "Death on the nile", 1000, 100, 5)
-				mock.ExpectQuery("SELECT (.+) FROM pagedetails").WithArgs(1, 2).WillReturnRows(rows)
-			},
-			/*want: &grpc.PageItems{
-				Title:          "Death on the nile",
-				TotalWords:     1000,
-				TotalSentences: 100,
-				TotalImages:    5,
-			},*/
-			want: nil,
-		},
-		{
-			name: "Not found",
-			s:    s,
-			args: args{
-				req: &grpc.PageRequest{
-					PageNo:   1,
-					PageSize: "a4",
-				},
-			},
-			mock: func() {
-				rows := sqlmock.NewRows([]string{"Page_no", "Page_size", "Title", "Total_word", "Total_sentences", "Total_images"})
-				mock.ExpectQuery("SELECT (.+) FROM pagedetails").WithArgs(1, 2).WillReturnRows(rows)
-			},
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.mock()
-			got, err := tt.s.GetDetails(tt.args.req, tt.args.stream)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("pageinfoServiceServer.GetDetails() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if err == nil && !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("pageinfoServiceServer.GetDetails() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+func makeStreamMock() *StreamMock {
+    return &StreamMock{
+        ctx:            context.Background(),
+        recvToServer:   make(chan *grpc.SumStreamRequest, 10),
+        sentFromServer: make(chan *v1.SumStreamResponse, 10),
+    }
+}
+type StreamMock struct {
+    grpc.ServerStream
+    ctx            context.Context
+    recvToServer   chan *v1.SumStreamRequest
+    sentFromServer chan *v1.SumStreamResponse
+}
+func (m *StreamMock) Context() context.Context {
+    return m.ctx
+}
+func (m *StreamMock) Send(resp *v1.SumStreamResponse) error {
+    m.sentFromServer <- resp
+    return nil
+}
+func (m *StreamMock) Recv() (*v1.SumStreamRequest, error) {
+    req, more := <-m.recvToServer
+    if !more {
+        return nil, errors.New("empty")
+    }
+    return req, nil
+}
+func (m *StreamMock) SendFromClient(req *v1.SumStreamRequest) error{
+    m.recvToServer <- req
+    return nil
+}
+func (m *StreamMock) RecvToClient() (*v1.SumStreamResponse, error) {
+    response, more := <-m.sentFromServer
+    if !more {
+        return nil, errors.New("empty")
+    }
+    return response, nil
 }

@@ -5,7 +5,7 @@ option go_package="grpc-server-streaming/grpc";
 
 message PageRequest{
     uint32 page_no=1;
-    string page_size=2;
+    uint32 page_size=2;
 }
 
 message PageItems { 

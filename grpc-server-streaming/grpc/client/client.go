@@ -23,7 +23,7 @@ import (
 )*/
 
 func printPageItems(client pb.PageInfoServiceClient) {
-	curReq := &pb.PageRequest{PageNo: 1, PageSize: "a4"}
+	curReq := &pb.PageRequest{PageNo: 1, PageSize: 3}
 	stream, err := client.GetDetails(context.Background(), curReq)
 	if err != nil {
 		log.Fatal(err)
