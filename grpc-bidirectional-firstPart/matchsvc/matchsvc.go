@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"grpc-bidirectional-firstPart/grpc"
 	"io"
-	"log"
+
+	//"log"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -18,7 +19,7 @@ type searchBookServiceServer struct {
 	grpc.UnimplementedSearchBookServiceServer
 }
 
-// NewBookServiceServer creates Book service
+// NewBookSearchServiceServer creates SearchBook service
 func NewSearchBookServiceServer(db *sql.DB) grpc.SearchBookServiceServer {
 	return &searchBookServiceServer{db: db}
 }
@@ -62,18 +63,27 @@ func (s *searchBookServiceServer) FindMatch(stream grpc.SearchBookService_FindMa
 					req.GetName()))
 			}
 			// get book data
-			var td grpc.Book
-			if err := rows.Scan(&td.Id, &td.Name, &td.Author); err != nil {
-				return status.Error(codes.Unknown, "failed to retrieve field values from books row-> "+err.Error())
+			var td *grpc.Book
+			var books []*grpc.Book
+
+			for rows.Next() {
+				if err := rows.Scan(&td.Id, &td.Name, &td.Author); err != nil {
+					return status.Error(codes.Unknown, "failed to retrieve field values from books row-> "+err.Error())
+				}
+				books = append(books, td)
 			}
 
-			res := stream.Send(&grpc.Response{
-				Book: &td,
-			})
+			for _, book := range books {
+				res := &grpc.Response{
+					Book: book,
+				}
+				if err := stream.Send(res); err != nil {
+					return err
+				}
 
-			if res != nil {
-				log.Fatalf("Error when response was sent to the client: %v", res)
 			}
+			return nil
+
 		} else if req.GetAuthor() != "nil" {
 			rows, err := c.QueryContext(ctx, "SELECT `ID`, `Name`, `Author` FROM books WHERE `Author`=? LIMIT 3",
 				req.GetAuthor())
@@ -86,27 +96,35 @@ func (s *searchBookServiceServer) FindMatch(stream grpc.SearchBookService_FindMa
 					return status.Error(codes.Unknown, "failed to retrieve data from books-> "+err.Error())
 				}
 				return status.Error(codes.NotFound, fmt.Sprintf("Books with Author='%s' was not found",
-					req.GetName()))
+					req.GetAuthor()))
 			}
 			// get book data
-			var td grpc.Book
+			var td *grpc.Book
+			var books []*grpc.Book
+
+			for rows.Next() {
+				if err := rows.Scan(&td.Id, &td.Name, &td.Author); err != nil {
+					return status.Error(codes.Unknown, "failed to retrieve field values from books row-> "+err.Error())
+				}
+				books = append(books, td)
+			}
+
 			if err := rows.Scan(&td.Id, &td.Name, &td.Author); err != nil {
 				return status.Error(codes.Unknown, "failed to retrieve field values from books row-> "+err.Error())
 			}
 
-			if rows.Next() {
-				return status.Error(codes.Unknown, fmt.Sprintf("found multiple books rows with Author='%s'",
-					req.GetAuthor()))
-			}
+			for _, book := range books {
+				res := &grpc.Response{
+					Book: book,
+				}
+				if err := stream.Send(res); err != nil {
+					return err
+				}
 
-			res := stream.Send(&grpc.Response{
-				Book: &td,
-			})
-
-			if res != nil {
-				log.Fatalf("Error when response was sent to the client: %v", res)
 			}
+			return nil
 		}
 
 	}
+
 }
